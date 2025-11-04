@@ -20,6 +20,7 @@ export interface UserLoginResponse {
   userId: string;
   email: string;
   displayName: string;
+  token: string; // JWT 토큰
 }
 
 export interface UserLogoutResponse {

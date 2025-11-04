@@ -1,5 +1,6 @@
 package com.jangyeonguk.backend.service;
 
+import com.jangyeonguk.backend.config.JwtUtil;
 import com.jangyeonguk.backend.dto.UserLoginRequest;
 import com.jangyeonguk.backend.dto.UserLoginResponse;
 import com.jangyeonguk.backend.dto.UserLogoutResponse;
@@ -9,10 +10,12 @@ import com.jangyeonguk.backend.entity.User;
 import com.jangyeonguk.backend.exception.InvalidCredentialsException;
 import com.jangyeonguk.backend.exception.UserAlreadyExistsException;
 import com.jangyeonguk.backend.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     /**
      * 회원가입
@@ -64,23 +68,57 @@ public class UserService {
             throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
+        // JWT 토큰 생성
+        String token = jwtUtil.generateToken(user.getUserId());
+
         return UserLoginResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
+                .token(token)
                 .build();
     }
 
     /**
      * 로그아웃
-     * 현재는 Stateless 세션 정책이므로 서버 측 세션 삭제는 불필요
-     * JWT 기반 인증 구현 시 토큰 무효화 로직 추가 필요
+     * JWT 토큰을 블랙리스트에 추가하여 무효화
+     * 
+     * @param request HTTP 요청 (Authorization 헤더에서 토큰 추출)
+     * @return 로그아웃 성공 메시지
      */
-    public UserLogoutResponse logout() {
-        // TODO: JWT 기반 인증 구현 시 토큰 블랙리스트 처리 또는 토큰 무효화 로직 추가
+    public UserLogoutResponse logout(HttpServletRequest request) {
+        // Authorization 헤더에서 토큰 추출
+        String token = extractTokenFromRequest(request);
+        
+        if (token != null && jwtUtil.validateToken(token)) {
+            // 토큰을 블랙리스트에 추가하여 무효화
+            jwtUtil.addToBlacklist(token);
+            
+            return UserLogoutResponse.builder()
+                    .message("로그아웃되었습니다. 토큰이 무효화되었습니다.")
+                    .build();
+        }
+        
+        // 토큰이 없거나 유효하지 않은 경우에도 로그아웃 성공으로 처리
         return UserLogoutResponse.builder()
                 .message("로그아웃되었습니다.")
                 .build();
+    }
+
+    /**
+     * HTTP 요청에서 JWT 토큰 추출
+     * 
+     * @param request HTTP 요청
+     * @return JWT 토큰 또는 null
+     */
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        
+        return null;
     }
 }
 

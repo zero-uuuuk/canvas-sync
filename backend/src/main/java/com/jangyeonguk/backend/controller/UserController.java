@@ -6,6 +6,7 @@ import com.jangyeonguk.backend.dto.UserLogoutResponse;
 import com.jangyeonguk.backend.dto.UserSignupRequest;
 import com.jangyeonguk.backend.dto.UserSignupResponse;
 import com.jangyeonguk.backend.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,11 +46,12 @@ public class UserController {
     /**
      * F-00 (3): 로그아웃
      * 
+     * @param request HTTP 요청 (Authorization 헤더에서 토큰 추출)
      * @return 로그아웃 성공 메시지
      */
     @PostMapping("/logout")
-    public ResponseEntity<UserLogoutResponse> logout() {
-        UserLogoutResponse response = userService.logout();
+    public ResponseEntity<UserLogoutResponse> logout(HttpServletRequest request) {
+        UserLogoutResponse response = userService.logout(request);
         return ResponseEntity.ok(response);
     }
 }

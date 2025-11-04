@@ -11,6 +11,8 @@ import com.jangyeonguk.backend.repository.CanvasObjectRepository;
 import com.jangyeonguk.backend.repository.RoomRepository;
 import com.jangyeonguk.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,17 +43,10 @@ public class CanvasObjectService {
         Room room = roomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
         
-        // 현재 인증된 사용자 조회 (임시로 첫 번째 사용자 사용)
+        // 현재 인증된 사용자 조회
         UUID currentUserId = getCurrentUserId();
-        User creator = null;
-        if (currentUserId != null) {
-            creator = userRepository.findByUserId(currentUserId)
+        User creator = userRepository.findByUserId(currentUserId)
                     .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + currentUserId));
-        }
-        
-        if (creator == null) {
-            throw new IllegalArgumentException("인증이 필요합니다. 로그인 후 캔버스 객체를 생성해주세요.");
-        }
         
         // 캔버스 객체 생성
         CanvasObject canvasObject = CanvasObject.builder()
@@ -137,15 +132,23 @@ public class CanvasObjectService {
     
     /**
      * 헬퍼 메서드: 현재 인증된 사용자의 userId 추출
-     * TODO: 인증 시스템 연동 시 SecurityContext에서 추출
+     * SecurityContext에서 인증 정보를 추출하여 사용자 ID를 반환
      */
     private UUID getCurrentUserId() {
-        // TODO: SecurityContext.getContext().getAuthentication()에서 추출
-        // 임시로 UserRepository에서 첫 번째 사용자를 가져옴 (인증 시스템 연동 후 제거)
-        return userRepository.findAll().stream()
-                .findFirst()
-                .map(User::getUserId)
-                .orElse(null);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("인증이 필요합니다. 로그인 후 다시 시도해주세요.");
+        }
+        
+        // JwtAuthenticationFilter에서 principal을 userId.toString()으로 설정했으므로
+        // principal을 UUID로 변환
+        String principal = authentication.getPrincipal().toString();
+        try {
+            return UUID.fromString(principal);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("유효하지 않은 사용자 인증 정보입니다.");
+        }
     }
     
     /**
