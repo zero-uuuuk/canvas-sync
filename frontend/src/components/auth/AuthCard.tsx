@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import './AuthCard.css';
@@ -6,18 +7,20 @@ import './AuthCard.css';
 type AuthMode = 'login' | 'signup';
 
 export function AuthCard() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>('login');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleLoginSuccess = (response: any) => {
     console.log('Login successful:', response);
-    // TODO: 로그인 성공 후 처리 (토큰 저장, 리다이렉트 등)
-    setErrorMessage('');
+    // 로그인 성공 후 사용자 정보 저장 및 대시보드로 이동
+    localStorage.setItem('user', JSON.stringify(response));
+    navigate('/dashboard');
   };
 
   const handleSignupSuccess = (response: any) => {
     console.log('Signup successful:', response);
-    // TODO: 회원가입 성공 후 처리 (자동 로그인 또는 로그인 페이지로 이동)
+    // 회원가입 성공 시 로그인 탭으로 이동
     setMode('login');
     setErrorMessage('');
   };

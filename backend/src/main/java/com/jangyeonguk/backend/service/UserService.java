@@ -2,6 +2,7 @@ package com.jangyeonguk.backend.service;
 
 import com.jangyeonguk.backend.dto.UserLoginRequest;
 import com.jangyeonguk.backend.dto.UserLoginResponse;
+import com.jangyeonguk.backend.dto.UserLogoutResponse;
 import com.jangyeonguk.backend.dto.UserSignupRequest;
 import com.jangyeonguk.backend.dto.UserSignupResponse;
 import com.jangyeonguk.backend.entity.User;
@@ -67,6 +68,18 @@ public class UserService {
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
+                .build();
+    }
+
+    /**
+     * 로그아웃
+     * 현재는 Stateless 세션 정책이므로 서버 측 세션 삭제는 불필요
+     * JWT 기반 인증 구현 시 토큰 무효화 로직 추가 필요
+     */
+    public UserLogoutResponse logout() {
+        // TODO: JWT 기반 인증 구현 시 토큰 블랙리스트 처리 또는 토큰 무효화 로직 추가
+        return UserLogoutResponse.builder()
+                .message("로그아웃되었습니다.")
                 .build();
     }
 }

@@ -1,4 +1,4 @@
-import type { UserLoginRequest, UserLoginResponse, UserSignupRequest, UserSignupResponse, ApiError } from '../types/auth';
+import type { UserLoginRequest, UserLoginResponse, UserSignupRequest, UserSignupResponse, UserLogoutResponse, ApiError } from '../types/auth';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -38,6 +38,25 @@ export const authApi = {
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.message || '로그인에 실패했습니다.');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * 로그아웃
+   */
+  async logout(): Promise<UserLogoutResponse> {
+    const response = await fetch(`${API_BASE_URL}/users/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.message || '로그아웃에 실패했습니다.');
     }
 
     return response.json();
