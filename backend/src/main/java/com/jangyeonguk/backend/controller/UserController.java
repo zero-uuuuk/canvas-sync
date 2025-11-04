@@ -2,6 +2,7 @@ package com.jangyeonguk.backend.controller;
 
 import com.jangyeonguk.backend.dto.UserLoginRequest;
 import com.jangyeonguk.backend.dto.UserLoginResponse;
+import com.jangyeonguk.backend.dto.UserLogoutResponse;
 import com.jangyeonguk.backend.dto.UserSignupRequest;
 import com.jangyeonguk.backend.dto.UserSignupResponse;
 import com.jangyeonguk.backend.service.UserService;
@@ -38,6 +39,17 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponse> login(@RequestBody UserLoginRequest request) {
         UserLoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * F-00 (3): 로그아웃
+     * 
+     * @return 로그아웃 성공 메시지
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<UserLogoutResponse> logout() {
+        UserLogoutResponse response = userService.logout();
         return ResponseEntity.ok(response);
     }
 }

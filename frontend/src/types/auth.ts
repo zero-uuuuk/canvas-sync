@@ -22,8 +22,15 @@ export interface UserLoginResponse {
   displayName: string;
 }
 
+export interface UserLogoutResponse {
+  message: string;
+}
+
 export interface ApiError {
   error: string;
   message: string;
 }
+
+// Room API에서도 사용
+export type { ApiError as RoomApiError };
 
