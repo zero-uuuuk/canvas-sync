@@ -23,11 +23,15 @@ public class Room {
     private UUID roomId; // UUID 타입의 방 아이디
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = true, foreignKey = @ForeignKey(name = "fk_room_owner")) // 방장(Owner) 외래키 제약조건 추가
-    private User owner; // 방장(Owner), 익명 생성 시 null
+    @JoinColumn(name = "owner_id", nullable = false, foreignKey = @ForeignKey(name = "fk_room_owner"))
+    private User owner; // 방장(Owner), 모든 방은 사용자와 연결됨
     
     @Column(name = "title", length = 255)
     private String title; // 방 제목
+    
+    @Column(name = "is_anonymous", nullable = false)
+    @Builder.Default
+    private Boolean isAnonymous = false; // 익명 여부, true면 다른 참가자들에게 "익명"으로 표시
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -19,31 +19,18 @@ public class RoomController {
     private final RoomService roomService;
     
     /**
-     * F-01a (1): 익명으로 새 캔버스(방) 생성
-     * 메인 페이지에서 버튼 클릭 시, 고유 room_id를 가진 새 캔버스 생성
+     * F-01a: 새 캔버스(방) 생성
+     * 모든 방은 사용자와 연결되며, isAnonymous가 true면 다른 참가자들에게 "익명"으로 표시됨
+     * 현재 인증된 사용자의 userId는 서버에서 자동으로 추출 (보안)
      * 
-     * @param request 방 생성 요청 (title은 선택사항, null이면 기본값 "새 팔레트" 사용)
+     * @param request 방 생성 요청
+     *                - title: 선택사항, null이면 기본값 "새 팔레트" 사용
+     *                - isAnonymous: true면 익명으로 생성 (다른 참가자들에게 "익명"으로 표시)
      * @return 생성된 방의 정보 및 URL
      */
     @PostMapping
     public ResponseEntity<RoomCreateResponse> createRoom(@RequestBody(required = false) RoomCreateRequest request) {
         RoomCreateResponse response = roomService.createRoom(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-    
-    /**
-     * F-01a (2): 사용자로 새 캔버스(방) 생성
-     * 인증된 사용자가 고유 room_id를 가진 새 캔버스 생성
-     * 
-     * @param request 방 생성 요청 (title은 선택사항, null이면 기본값 "새 팔레트" 사용)
-     * @param ownerId 방 생성자(owner)의 사용자 ID
-     * @return 생성된 방의 정보 및 URL
-     */
-    @PostMapping("/user/{ownerId}")
-    public ResponseEntity<RoomCreateResponse> createRoomWithOwner(
-            @RequestBody(required = false) RoomCreateRequest request,
-            @PathVariable UUID ownerId) {
-        RoomCreateResponse response = roomService.createRoom(request, ownerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     

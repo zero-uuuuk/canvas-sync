@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RoomCreateRequest {
     private String title;
+    private Boolean isAnonymous; // true면 익명으로 생성 (다른 참가자들에게 "익명"으로 표시)
 }
 
