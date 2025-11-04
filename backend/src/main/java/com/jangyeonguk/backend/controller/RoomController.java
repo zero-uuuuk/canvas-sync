@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,6 +33,18 @@ public class RoomController {
     public ResponseEntity<RoomCreateResponse> createRoom(@RequestBody(required = false) RoomCreateRequest request) {
         RoomCreateResponse response = roomService.createRoom(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    /**
+     * 전체 방 리스트 조회
+     * 대시보드에서 최근 업데이트된 순서로 정렬된 방 목록을 반환
+     * 
+     * @return 방 목록 (최근 업데이트된 순서)
+     */
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        List<RoomResponse> rooms = roomService.getAllRooms();
+        return ResponseEntity.ok(rooms);
     }
     
     /**
