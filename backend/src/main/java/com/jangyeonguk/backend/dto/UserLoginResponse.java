@@ -15,5 +15,6 @@ public class UserLoginResponse {
     private UUID userId;
     private String email;
     private String displayName;
+    private String token; // JWT 토큰
 }
 

@@ -1,65 +1,41 @@
-import type { UserLoginRequest, UserLoginResponse, UserSignupRequest, UserSignupResponse, UserLogoutResponse, ApiError } from '../types/auth';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import type { UserLoginRequest, UserLoginResponse, UserSignupRequest, UserSignupResponse, UserLogoutResponse } from '../types/auth';
+import { apiPost } from '../utils/apiClient';
+import { setToken, removeToken } from '../utils/tokenStorage';
 
 export const authApi = {
   /**
    * 회원가입
    */
   async signup(request: UserSignupRequest): Promise<UserSignupResponse> {
-    const response = await fetch(`${API_BASE_URL}/users/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.message || '회원가입에 실패했습니다.');
-    }
-
-    return response.json();
+    return apiPost<UserSignupResponse>('/users/signup', request);
   },
 
   /**
    * 로그인
+   * 로그인 성공 시 토큰을 자동으로 저장합니다.
    */
   async login(request: UserLoginRequest): Promise<UserLoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/users/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.message || '로그인에 실패했습니다.');
+    const response = await apiPost<UserLoginResponse>('/users/login', request);
+    
+    // 로그인 성공 시 토큰 저장
+    if (response.token) {
+      setToken(response.token);
     }
-
-    return response.json();
+    
+    return response;
   },
 
   /**
    * 로그아웃
+   * 로그아웃 시 토큰을 자동으로 제거합니다.
    */
   async logout(): Promise<UserLogoutResponse> {
-    const response = await fetch(`${API_BASE_URL}/users/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.message || '로그아웃에 실패했습니다.');
-    }
-
-    return response.json();
+    const response = await apiPost<UserLogoutResponse>('/users/logout');
+    
+    // 로그아웃 시 토큰 제거
+    removeToken();
+    
+    return response;
   },
 };
 
