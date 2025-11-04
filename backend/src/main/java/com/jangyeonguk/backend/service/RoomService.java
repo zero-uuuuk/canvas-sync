@@ -4,15 +4,20 @@ import com.jangyeonguk.backend.dto.RoomCreateRequest;
 import com.jangyeonguk.backend.dto.RoomCreateResponse;
 import com.jangyeonguk.backend.dto.RoomResponse;
 import com.jangyeonguk.backend.entity.Room;
+import com.jangyeonguk.backend.entity.RoomParticipant;
+import com.jangyeonguk.backend.entity.RoomParticipantId;
 import com.jangyeonguk.backend.entity.User;
 import com.jangyeonguk.backend.exception.RoomNotFoundException;
+import com.jangyeonguk.backend.repository.RoomParticipantRepository;
 import com.jangyeonguk.backend.repository.RoomRepository;
 import com.jangyeonguk.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +26,7 @@ public class RoomService {
     
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+    private final RoomParticipantRepository roomParticipantRepository;
     
     /**
      * 새 방 생성
@@ -63,6 +69,16 @@ public class RoomService {
         
         Room savedRoom = roomRepository.save(room);
         
+        // 방 생성자(owner)를 RoomParticipant에 자동 추가
+        RoomParticipantId participantId = new RoomParticipantId(owner.getUserId(), savedRoom.getRoomId());
+        RoomParticipant participant = RoomParticipant.builder()
+                .id(participantId)
+                .user(owner)
+                .room(savedRoom)
+                .websocketSessionId(null) // WebSocket 연결 시 설정
+                .build();
+        roomParticipantRepository.save(participant);
+        
         return RoomCreateResponse.builder()
                 .roomId(savedRoom.getRoomId())
                 .roomUrl("/rooms/" + savedRoom.getRoomId())
@@ -70,7 +86,35 @@ public class RoomService {
     }
     
     /**
-     * 현재 인증된 사용자의 userId 추출
+     * 전체 방 목록 조회
+     * 최근 업데이트된 순서로 정렬하여 반환
+     * 
+     * @return 방 목록 (최근 업데이트된 순서)
+     */
+    public List<RoomResponse> getAllRooms() {
+        List<Room> rooms = roomRepository.findAllByOrderByLastUpdatedAtDesc();
+        
+        return rooms.stream()
+                .map(this::mapToRoomResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 방 상세 조회
+     * 방의 상세 정보를 반환
+     * 
+     * @param roomId 방 ID
+     * @return 방 정보
+     */
+    public RoomResponse getRoom(UUID roomId) {
+        Room room = roomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
+        
+        return mapToRoomResponse(room);
+    }
+
+    /**
+     * 헬퍼 메서드: 현재 인증된 사용자의 userId 추출
      * TODO: 인증 시스템 연동 시 SecurityContext에서 추출
      */
     private UUID getCurrentUserId() {
@@ -82,10 +126,10 @@ public class RoomService {
                 .orElse(null);
     }
     
-    public RoomResponse getRoom(UUID roomId) {
-        Room room = roomRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
-        
+    /**
+     * 헬퍼 메서드: Room 엔티티를 RoomResponse DTO로 변환
+     */
+    private RoomResponse mapToRoomResponse(Room room) {
         // isAnonymous가 true면 "익명"으로 표시, false면 displayName 표시
         String ownerName = room.getIsAnonymous() 
                 ? "익명" 
