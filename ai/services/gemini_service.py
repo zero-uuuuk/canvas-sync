@@ -54,6 +54,10 @@ class GeminiService:
             # 이미지 바이트를 PIL Image로 변환
             image = Image.open(BytesIO(image_bytes))
 
+            # 입력 이미지의 크기 저장
+            original_width, original_height = image.size
+            logger.info(f"입력 이미지 크기: {original_width}x{original_height}")
+
             # 프롬프트에 스티커 스타일 키워드 추가
             enhanced_prompt = (
                 f"{prompt}. "
@@ -82,12 +86,16 @@ class GeminiService:
                     logger.info("배경 제거 중...")
                     output_image = remove(response_image)
                     
+                    # 입력 이미지와 동일한 크기로 리사이즈
+                    logger.info(f"이미지 리사이즈: {output_image.size} -> {original_width}x{original_height}")
+                    output_image = output_image.resize((original_width, original_height), Image.Resampling.LANCZOS)
+                    
                     # PNG 형식으로 변환 (투명 배경)
                     png_buffer = BytesIO()
                     output_image.save(png_buffer, format="PNG")
                     png_bytes = png_buffer.getvalue()
                     
-                    logger.info("이미지 편집 및 배경 제거 완료 (PNG 형식, 투명 배경)")
+                    logger.info(f"이미지 편집 및 배경 제거 완료 (PNG 형식, 투명 배경, 크기: {original_width}x{original_height})")
                     return png_bytes
             
             raise ValueError("이미지 데이터를 찾을 수 없습니다.")

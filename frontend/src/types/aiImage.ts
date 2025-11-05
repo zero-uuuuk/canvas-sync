@@ -2,6 +2,7 @@
 export interface AIImageConversionRequest {
   selectedObjectIds: string[]; // 선택된 객체 ID 목록
   prompt: string; // 사용자가 입력한 프롬프트
+  image: Blob; // 선택 영역 이미지
 }
 
 export interface AIImageConversionResponse {

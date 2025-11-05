@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { roomApi } from '../api/roomApi';
 import { canvasApi } from '../api/canvasApi';
 import type { RoomResponse, InvitationCreateResponse } from '../types/room';
-import type { CanvasObjectResponse, LineObjectData, PathObjectData } from '../types/canvas';
+import type { CanvasObjectResponse, LineObjectData, PathObjectData, ImageObjectData } from '../types/canvas';
 import { InvitationLinkModal } from '../components/room/InvitationLinkModal';
 import { FloatingToolbar } from '../components/room/FloatingToolbar';
 import { AIImageConversionModal } from '../components/room/AIImageConversionModal';
@@ -46,6 +46,7 @@ export function RoomPage() {
   const [originalBoundingBox, setOriginalBoundingBox] = useState<{ minX: number; minY: number; maxX: number; maxY: number } | null>(null); // 드래그 시작 시 원본 bounding box
   const recentlyCreatedObjectIdsRef = useRef<Set<string>>(new Set()); // 자신이 방금 생성한 객체 ID 추적
   const erasedObjectIdsRef = useRef<Set<string>>(new Set()); // 지우개로 삭제한 객체 ID 추적 (중복 삭제 방지)
+  const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map()); // 이미지 객체 캐시
 
   // 방 정보 및 캔버스 객체 로드
   useEffect(() => {
@@ -228,6 +229,44 @@ export function RoomPage() {
         } catch (e) {
           console.error('Failed to parse path data:', e);
         }
+      } else if (obj.objectType === 'image') {
+        try {
+          const imageData: ImageObjectData = JSON.parse(obj.objectData);
+          const x = imageData.x || 0;
+          const y = imageData.y || 0;
+          
+          // 이미지 캐시에서 가져오기 또는 새로 생성
+          let img = imageCacheRef.current.get(obj.objectId);
+          if (!img) {
+            img = new Image();
+            img.src = `data:image/png;base64,${imageData.imageData}`;
+            imageCacheRef.current.set(obj.objectId, img);
+          }
+          
+          // 이미지가 로드된 경우에만 렌더링
+          if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, x, y, imageData.width || img.width, imageData.height || img.height);
+          } else {
+            // 이미지 로드 중이면 로드 완료 후 다시 렌더링
+            img.onload = () => {
+              requestAnimationFrame(renderCanvas);
+            };
+          }
+          
+          // 선택된 객체 하이라이트
+          if (selectedObjectIds.has(obj.objectId) && !isDragging) {
+            const width = imageData.width || (img.complete ? img.width : 0);
+            const height = imageData.height || (img.complete ? img.height : 0);
+            
+            ctx.strokeStyle = '#0066ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(x, y, width, height);
+            ctx.setLineDash([]);
+          }
+        } catch (e) {
+          console.error('Failed to parse image data:', e);
+        }
       }
     });
     
@@ -268,6 +307,36 @@ export function RoomPage() {
             ctx.setLineDash([]);
           } catch (e) {
             console.error('Failed to parse dragged path data:', e);
+          }
+        } else if (draggedObject.objectType === 'image') {
+          try {
+            const imageData: ImageObjectData = JSON.parse(draggedObject.objectData);
+            const x = imageData.x || 0;
+            const y = imageData.y || 0;
+            
+            // 이미지 캐시에서 가져오기
+            let img = imageCacheRef.current.get(draggedObject.objectId);
+            if (!img) {
+              img = new Image();
+              img.src = `data:image/png;base64,${imageData.imageData}`;
+              imageCacheRef.current.set(draggedObject.objectId, img);
+            }
+            
+            // 이미지가 로드된 경우에만 렌더링
+            if (img.complete && img.naturalWidth > 0) {
+              ctx.drawImage(img, x, y, imageData.width || img.width, imageData.height || img.height);
+            }
+            
+            // 드래그 중인 객체 하이라이트
+            const width = imageData.width || (img.complete ? img.width : 0);
+            const height = imageData.height || (img.complete ? img.height : 0);
+            ctx.strokeStyle = '#0066ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(x, y, width, height);
+            ctx.setLineDash([]);
+          } catch (e) {
+            console.error('Failed to parse dragged image data:', e);
           }
         }
       });
@@ -447,6 +516,17 @@ export function RoomPage() {
             maxX = Math.max(maxX, point.x);
             maxY = Math.max(maxY, point.y);
           });
+        } else if (obj.objectType === 'image') {
+          const imageData: ImageObjectData = JSON.parse(obj.objectData);
+          const x = imageData.x || 0;
+          const y = imageData.y || 0;
+          const width = imageData.width || 0;
+          const height = imageData.height || 0;
+          
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + width);
+          maxY = Math.max(maxY, y + height);
         }
       } catch (e) {
         console.error('Failed to parse object data for bounding box:', e);
@@ -539,6 +619,21 @@ export function RoomPage() {
         } catch (e) {
           console.error('Failed to parse path data:', e);
         }
+      } else if (obj.objectType === 'image') {
+        try {
+          const imageData: ImageObjectData = JSON.parse(obj.objectData);
+          const x = imageData.x || 0;
+          const y = imageData.y || 0;
+          const width = imageData.width || 0;
+          const height = imageData.height || 0;
+          
+          // 클릭한 위치가 이미지 영역 안에 있는지 확인
+          if (pos.x >= x && pos.x <= x + width && pos.y >= y && pos.y <= y + height) {
+            return obj;
+          }
+        } catch (e) {
+          console.error('Failed to parse image data:', e);
+        }
       }
     }
     
@@ -579,6 +674,23 @@ export function RoomPage() {
           if (point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY) {
             return true;
           }
+        }
+      } else if (obj.objectType === 'image') {
+        const imageData: ImageObjectData = JSON.parse(obj.objectData);
+        const x = imageData.x || 0;
+        const y = imageData.y || 0;
+        const width = imageData.width || 0;
+        const height = imageData.height || 0;
+        
+        // 이미지 영역이 선택 영역과 겹치는지 확인
+        const imageMinX = x;
+        const imageMaxX = x + width;
+        const imageMinY = y;
+        const imageMaxY = y + height;
+        
+        // 이미지 영역이 선택 영역과 겹치는지 확인
+        if (imageMinX <= maxX && imageMaxX >= minX && imageMinY <= maxY && imageMaxY >= minY) {
+          return true;
         }
       }
     } catch (e) {
@@ -717,6 +829,13 @@ export function RoomPage() {
                   const offsetY = pos.y - firstPoint.y;
                   setDragOffset({ x: offsetX, y: offsetY });
                 }
+              } else if (firstSelectedObject.objectType === 'image') {
+                const imageData: ImageObjectData = JSON.parse(firstSelectedObject.objectData);
+                const x = imageData.x || 0;
+                const y = imageData.y || 0;
+                const offsetX = pos.x - x;
+                const offsetY = pos.y - y;
+                setDragOffset({ x: offsetX, y: offsetY });
               }
             } catch (e) {
               console.error('Failed to parse object data for drag offset:', e);
@@ -819,6 +938,14 @@ export function RoomPage() {
                     deltaX = newFirstX - firstPoint.x;
                     deltaY = newFirstY - firstPoint.y;
                   }
+                } else if (originalObj.objectType === 'image') {
+                  const originalImageData: ImageObjectData = JSON.parse(originalObj.objectData);
+                  const originalX = originalImageData.x || 0;
+                  const originalY = originalImageData.y || 0;
+                  const newX = pos.x - dragOffset.x;
+                  const newY = pos.y - dragOffset.y;
+                  deltaX = newX - originalX;
+                  deltaY = newY - originalY;
                 }
               }
             } catch (e) {
@@ -866,6 +993,19 @@ export function RoomPage() {
               updatedDragged.set(id, {
                 ...originalObj,
                 objectData: JSON.stringify(updatedPathData),
+              });
+            } else if (originalObj.objectType === 'image') {
+              const originalImageData: ImageObjectData = JSON.parse(originalObj.objectData);
+              const updatedImageData: ImageObjectData = {
+                imageData: originalImageData.imageData,
+                width: originalImageData.width,
+                height: originalImageData.height,
+                x: (originalImageData.x || 0) + deltaX,
+                y: (originalImageData.y || 0) + deltaY,
+              };
+              updatedDragged.set(id, {
+                ...originalObj,
+                objectData: JSON.stringify(updatedImageData),
               });
             }
           } catch (e) {
@@ -1138,16 +1278,59 @@ export function RoomPage() {
     }
   };
 
+  // 선택된 객체들의 bounding box 영역을 이미지로 추출
+  const extractSelectedAreaAsImage = async (): Promise<Blob | null> => {
+    const canvas = canvasRef.current;
+    if (!canvas || selectedObjectIds.size === 0) return null;
+
+    const boundingBox = getSelectedObjectsBoundingBox();
+    if (!boundingBox) return null;
+
+    const { minX, minY, maxX, maxY } = boundingBox;
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // 임시 canvas 생성하여 선택 영역만 추출
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return null;
+
+    // 원본 canvas에서 선택 영역을 임시 canvas로 복사
+    tempCtx.drawImage(
+      canvas,
+      minX, minY, width, height, // 원본에서 추출할 영역
+      0, 0, width, height // 임시 canvas에 그릴 위치
+    );
+
+    // Blob으로 변환
+    return new Promise<Blob | null>((resolve) => {
+      tempCanvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/png');
+    });
+  };
+
   // AI 이미지 변환 핸들러
   const handleAIImageConvert = async (prompt: string) => {
     if (!roomId || selectedObjectIds.size === 0) return;
 
     try {
       setIsConverting(true);
+      
+      // 선택 영역을 이미지로 추출
+      const imageBlob = await extractSelectedAreaAsImage();
+      if (!imageBlob) {
+        alert('선택 영역을 이미지로 추출할 수 없습니다.');
+        return;
+      }
+
       const selectedIdsArray = Array.from(selectedObjectIds);
       const response = await aiImageApi.convertToImage(roomId, {
         selectedObjectIds: selectedIdsArray,
         prompt: prompt,
+        image: imageBlob,
       });
       
       alert(`변환 요청이 접수되었습니다.\n변환 ID: ${response.conversionId}\n상태: ${response.status}\n${response.message}`);
