@@ -1,4 +1,4 @@
-import type { RoomCreateRequest, RoomCreateResponse, RoomResponse } from '../types/room';
+import type { RoomCreateRequest, RoomCreateResponse, RoomResponse, InvitationCreateResponse } from '../types/room';
 import { apiGet, apiPost } from '../utils/apiClient';
 
 export const roomApi = {
@@ -22,6 +22,13 @@ export const roomApi = {
    */
   async getRoom(roomId: string): Promise<RoomResponse> {
     return apiGet<RoomResponse>(`/rooms/${roomId}`);
+  },
+
+  /**
+   * 초대 링크 생성
+   */
+  async createInvitation(roomId: string): Promise<InvitationCreateResponse> {
+    return apiPost<InvitationCreateResponse>(`/rooms/${roomId}/invitations`);
   },
 };
 

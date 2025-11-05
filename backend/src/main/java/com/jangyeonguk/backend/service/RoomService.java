@@ -80,15 +80,22 @@ public class RoomService {
     }
     
     /**
-     * 전체 방 목록 조회
+     * 현재 인증된 사용자가 참여한 방 목록 조회
      * 최근 업데이트된 순서로 정렬하여 반환
      * 
-     * @return 방 목록 (최근 업데이트된 순서)
+     * @return 사용자가 참여한 방 목록 (최근 업데이트된 순서)
      */
     public List<RoomResponse> getAllRooms() {
-        List<Room> rooms = roomRepository.findAllByOrderByLastUpdatedAtDesc();
+        // 현재 인증된 사용자의 userId 추출
+        UUID currentUserId = getCurrentUserId();
         
-        return rooms.stream()
+        // 사용자가 참여한 RoomParticipant 목록 조회 (최근 업데이트된 순서로 정렬)
+        List<RoomParticipant> participants = roomParticipantRepository
+                .findById_UserIdOrderByRoom_LastUpdatedAtDesc(currentUserId);
+        
+        // RoomParticipant에서 Room을 추출하여 RoomResponse로 변환
+        return participants.stream()
+                .map(RoomParticipant::getRoom)
                 .map(this::mapToRoomResponse)
                 .collect(Collectors.toList());
     }

@@ -18,3 +18,10 @@ export interface RoomResponse {
   lastUpdatedAt: string;
 }
 
+export interface InvitationCreateResponse {
+  invitationId: string;
+  invitationToken: string;
+  invitationUrl: string;
+  expiresAt: string;
+}
+
