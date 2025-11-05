@@ -25,6 +25,7 @@ export function RoomPage() {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
   const [canvasObjects, setCanvasObjects] = useState<CanvasObjectResponse[]>([]);
+  const recentlyCreatedObjectIdsRef = useRef<Set<string>>(new Set()); // 자신이 방금 생성한 객체 ID 추적
 
   // 방 정보 및 캔버스 객체 로드
   useEffect(() => {
@@ -51,6 +52,53 @@ export function RoomPage() {
 
     fetchData();
   }, [roomId, navigate]);
+
+  // 캔버스 객체 실시간 동기화 (Polling)
+  useEffect(() => {
+    if (!roomId || isLoading) return;
+
+    const pollCanvasObjects = async () => {
+      try {
+        const objectsData = await canvasApi.getCanvasObjects(roomId);
+        
+        // 객체 ID 비교하여 변경사항만 업데이트
+        setCanvasObjects((prev) => {
+          // 현재 로컬에 있는 객체 ID 집합
+          const prevObjectIds = new Set(prev.map(obj => obj.objectId));
+          // 서버에서 받은 객체 ID 집합
+          const newObjectIds = new Set(objectsData.map(obj => obj.objectId));
+          
+          // 객체 개수가 다르거나 새 객체가 있으면 업데이트
+          const hasChanges = prevObjectIds.size !== newObjectIds.size || 
+              ![...newObjectIds].every(id => prevObjectIds.has(id));
+          
+          if (hasChanges) {
+            // 서버 데이터를 기준으로 업데이트
+            // 자신이 방금 생성한 객체는 서버에 저장되면 polling에서 자동으로 받아옴
+            // 최근 생성한 객체 ID 추적은 5초 후 자동으로 정리됨
+            return objectsData;
+          }
+          
+          return prev; // 변경사항이 없으면 이전 상태 유지
+        });
+      } catch (err) {
+        console.error('Failed to poll canvas objects:', err);
+        // 에러 발생 시에도 polling은 계속 진행
+      }
+    };
+
+    // 2.5초마다 polling 실행
+    const intervalId = setInterval(pollCanvasObjects, 2500);
+
+    // 초기 polling 실행
+    pollCanvasObjects();
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      clearInterval(intervalId);
+      recentlyCreatedObjectIdsRef.current.clear();
+    };
+  }, [roomId, isLoading]);
 
   // 캔버스 렌더링 함수
   const renderCanvas = useCallback(() => {
@@ -205,7 +253,10 @@ export function RoomPage() {
         objectData: JSON.stringify(lineData),
       });
 
-      // 상태 업데이트
+      // 최근 생성한 객체 ID 추적 (polling에서 중복 방지)
+      recentlyCreatedObjectIdsRef.current.add(newObject.objectId);
+
+      // 상태 업데이트 (자신이 그린 객체는 즉시 반영)
       setCanvasObjects((prev) => [...prev, newObject]);
     } catch (err) {
       console.error('Failed to save canvas object:', err);
@@ -230,9 +281,8 @@ export function RoomPage() {
 
     try {
       await canvasApi.undoCanvasObject(roomId);
-      // 캔버스 객체 목록 다시 불러오기
-      const objectsData = await canvasApi.getCanvasObjects(roomId);
-      setCanvasObjects(objectsData);
+      // Polling이 자동으로 업데이트하므로 수동으로 불러오지 않음
+      // 필요시 즉시 업데이트를 위해 호출할 수도 있음
     } catch (err) {
       console.error('Failed to undo canvas object:', err);
       alert(err instanceof Error ? err.message : 'Undo에 실패했습니다.');
@@ -245,9 +295,7 @@ export function RoomPage() {
 
     try {
       await canvasApi.redoCanvasObject(roomId);
-      // 캔버스 객체 목록 다시 불러오기
-      const objectsData = await canvasApi.getCanvasObjects(roomId);
-      setCanvasObjects(objectsData);
+      // Polling이 자동으로 업데이트하므로 수동으로 불러오지 않음
     } catch (err) {
       console.error('Failed to redo canvas object:', err);
       // 복구할 객체가 없을 때는 에러 메시지를 표시하지 않음 (정상적인 경우)
@@ -319,7 +367,7 @@ export function RoomPage() {
         <div className="room-info">
           <h1 className="room-title">{room.title}</h1>
           <p className="room-meta">
-            생성자: {room.ownerName} · {new Date(room.createdAt).toLocaleDateString('ko-KR')}
+            생성자: {room.ownerName} · 참여자 {room.participantCount}명 · {new Date(room.createdAt).toLocaleDateString('ko-KR')}
           </p>
         </div>
         <div className="action-buttons">

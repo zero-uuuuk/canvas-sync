@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -94,9 +95,25 @@ public class RoomService {
                 .findById_UserIdOrderByRoom_LastUpdatedAtDesc(currentUserId);
         
         // RoomParticipant에서 Room을 추출하여 RoomResponse로 변환
-        return participants.stream()
+        List<Room> rooms = participants.stream()
                 .map(RoomParticipant::getRoom)
-                .map(this::mapToRoomResponse)
+                .collect(Collectors.toList());
+        
+        // 방 ID 목록 추출
+        List<UUID> roomIds = rooms.stream()
+                .map(Room::getRoomId)
+                .collect(Collectors.toList());
+        
+        // 한 번의 쿼리로 모든 방의 참여자 수 조회
+        Map<UUID, Long> participantCounts = roomParticipantRepository
+                .getParticipantCountsByRoomIds(roomIds);
+        
+        // RoomResponse로 변환 (참여자 수 포함)
+        return rooms.stream()
+                .map(room -> {
+                    Long count = participantCounts.getOrDefault(room.getRoomId(), 0L);
+                    return mapToRoomResponse(room, count.intValue());
+                })
                 .collect(Collectors.toList());
     }
     
@@ -111,7 +128,13 @@ public class RoomService {
         Room room = roomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
         
-        return mapToRoomResponse(room);
+        // 해당 방의 참여자 수 조회
+        List<UUID> roomIds = List.of(roomId);
+        Map<UUID, Long> participantCounts = roomParticipantRepository
+                .getParticipantCountsByRoomIds(roomIds);
+        Long count = participantCounts.getOrDefault(roomId, 0L);
+        
+        return mapToRoomResponse(room, count.intValue());
     }
 
     /**
@@ -138,7 +161,7 @@ public class RoomService {
     /**
      * 헬퍼 메서드: Room 엔티티를 RoomResponse DTO로 변환
      */
-    private RoomResponse mapToRoomResponse(Room room) {
+    private RoomResponse mapToRoomResponse(Room room, Integer participantCount) {
         // isAnonymous가 true면 "익명"으로 표시, false면 displayName 표시
         String ownerName = room.getIsAnonymous() 
                 ? "익명" 
@@ -155,6 +178,7 @@ public class RoomService {
                 .ownerName(ownerName)
                 .createdAt(room.getCreatedAt())
                 .lastUpdatedAt(room.getLastUpdatedAt())
+                .participantCount(participantCount)
                 .build();
     }
 }

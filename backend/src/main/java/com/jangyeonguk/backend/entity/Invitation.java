@@ -40,16 +40,12 @@ public class Invitation {
     @Column(name = "expires_at", nullable = false)
     private OffsetDateTime expiresAt; // 만료 시간
     
-    @Column(name = "accepted_at")
-    private OffsetDateTime acceptedAt; // 수락 시간
-    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt; // 생성일시
     
     public enum InvitationStatus {
         PENDING,    // 대기 중
-        ACCEPTED,   // 수락됨
         EXPIRED     // 만료됨
     }
 }

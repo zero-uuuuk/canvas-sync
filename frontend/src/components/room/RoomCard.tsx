@@ -49,7 +49,7 @@ export function RoomCard({ room, onClick }: RoomCardProps) {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span>0</span>
+            <span>{room.participantCount}</span>
           </div>
           <div className="room-card-meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
