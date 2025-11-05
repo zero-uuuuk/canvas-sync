@@ -34,3 +34,12 @@ export interface PathObjectData {
   strokeWidth: number;
 }
 
+// Image object data structure
+export interface ImageObjectData {
+  imageData: string; // Base64 인코딩된 이미지 데이터
+  width: number;
+  height: number;
+  x?: number; // 이미지 위치 X 좌표 (기본값: 0)
+  y?: number; // 이미지 위치 Y 좌표 (기본값: 0)
+}
+

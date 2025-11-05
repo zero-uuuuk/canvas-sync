@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,5 +16,6 @@ import java.util.UUID;
 public class AIImageConversionRequest {
     private List<UUID> selectedObjectIds; // 선택된 객체 ID 목록
     private String prompt; // 사용자가 입력한 프롬프트
+    private MultipartFile image; // 선택 영역 이미지 파일
 }
 
