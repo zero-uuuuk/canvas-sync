@@ -2,6 +2,7 @@ package com.jangyeonguk.backend.controller;
 
 import com.jangyeonguk.backend.dto.CanvasObjectCreateRequest;
 import com.jangyeonguk.backend.dto.CanvasObjectResponse;
+import com.jangyeonguk.backend.dto.CanvasObjectUpdateRequest;
 import com.jangyeonguk.backend.service.CanvasObjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -66,6 +67,38 @@ public class CanvasObjectController {
     @PostMapping("/redo")
     public ResponseEntity<CanvasObjectResponse> redoCanvasObject(@PathVariable UUID roomId) {
         CanvasObjectResponse response = canvasObjectService.redoCanvasObject(roomId);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 개별 캔버스 객체 삭제 (soft delete)
+     * 
+     * @param roomId 방 ID
+     * @param objectId 객체 ID
+     * @return 삭제된 캔버스 객체 정보
+     */
+    @DeleteMapping("/{objectId}")
+    public ResponseEntity<CanvasObjectResponse> deleteCanvasObject(
+            @PathVariable UUID roomId,
+            @PathVariable UUID objectId) {
+        CanvasObjectResponse response = canvasObjectService.deleteCanvasObject(roomId, objectId);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 캔버스 객체 업데이트 (objectData 수정)
+     * 
+     * @param roomId 방 ID
+     * @param objectId 객체 ID
+     * @param request 업데이트 요청 (objectData)
+     * @return 업데이트된 캔버스 객체 정보
+     */
+    @PutMapping("/{objectId}")
+    public ResponseEntity<CanvasObjectResponse> updateCanvasObject(
+            @PathVariable UUID roomId,
+            @PathVariable UUID objectId,
+            @RequestBody CanvasObjectUpdateRequest request) {
+        CanvasObjectResponse response = canvasObjectService.updateCanvasObject(roomId, objectId, request);
         return ResponseEntity.ok(response);
     }
 }
