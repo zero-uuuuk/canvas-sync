@@ -16,6 +16,7 @@ export interface RoomResponse {
   ownerName: string;
   createdAt: string;
   lastUpdatedAt: string;
+  participantCount: number; // 방 참여자 수
 }
 
 export interface InvitationCreateResponse {
@@ -23,5 +24,11 @@ export interface InvitationCreateResponse {
   invitationToken: string;
   invitationUrl: string;
   expiresAt: string;
+}
+
+export interface InvitationAcceptResponse {
+  roomId: string;
+  roomUrl: string;
+  message: string;
 }
 

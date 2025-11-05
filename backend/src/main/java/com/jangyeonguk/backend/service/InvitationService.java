@@ -79,8 +79,8 @@ public class InvitationService {
         
         Invitation savedInvitation = invitationRepository.save(invitation);
         
-        // 초대 링크 URL 생성
-        String invitationUrl = "/api/invitations/" + token + "/accept";
+        // 초대 링크 URL 생성 (프론트엔드 라우트 형식)
+        String invitationUrl = "/invitations/" + token + "/accept";
         
         return InvitationCreateResponse.builder()
                 .invitationId(savedInvitation.getInvitationId())
@@ -93,6 +93,8 @@ public class InvitationService {
     /**
      * 초대 수락
      * 초대 토큰을 받아서 검증하고, 사용자를 방의 참가자로 추가
+     * 하나의 초대 링크는 여러 명이 동시에 사용할 수 있으며, 초대 상태는 계속 유효하게 유지됨
+     * 만료 시간만 확인하여 유효성을 검증함
      * 
      * @param token 초대 토큰
      * @return 방 접속 정보
@@ -110,11 +112,6 @@ public class InvitationService {
         Invitation invitation = invitationRepository.findByToken(token)
                 .orElseThrow(() -> new InvitationNotFoundException("유효하지 않은 초대 링크입니다."));
         
-        // 초대 상태 확인
-        if (invitation.getStatus() == Invitation.InvitationStatus.ACCEPTED) {
-            throw new InvitationAlreadyAcceptedException("이미 수락된 초대입니다.");
-        }
-        
         // 만료 시간 확인
         if (invitation.getExpiresAt().isBefore(OffsetDateTime.now())) {
             // 만료 상태로 업데이트
@@ -128,11 +125,7 @@ public class InvitationService {
                 currentUserId, invitation.getRoom().getRoomId());
         
         if (alreadyParticipant) {
-            // 이미 참가자인 경우 초대를 수락된 것으로 표시만 하고 방 정보 반환
-            invitation.setStatus(Invitation.InvitationStatus.ACCEPTED);
-            invitation.setAcceptedAt(OffsetDateTime.now());
-            invitationRepository.save(invitation);
-            
+            // 이미 참가자인 경우 방 정보만 반환 (초대 링크는 계속 유효하게 유지)
             return InvitationAcceptResponse.builder()
                     .roomId(invitation.getRoom().getRoomId())
                     .roomUrl("/rooms/" + invitation.getRoom().getRoomId())
@@ -151,11 +144,7 @@ public class InvitationService {
                 .build();
         roomParticipantRepository.save(participant);
         
-        // 초대 상태를 수락됨으로 업데이트
-        invitation.setStatus(Invitation.InvitationStatus.ACCEPTED);
-        invitation.setAcceptedAt(OffsetDateTime.now());
-        invitationRepository.save(invitation);
-        
+        // 초대 링크는 여러 명이 사용할 수 있으므로 상태를 변경하지 않음
         return InvitationAcceptResponse.builder()
                 .roomId(invitation.getRoom().getRoomId())
                 .roomUrl("/rooms/" + invitation.getRoom().getRoomId())

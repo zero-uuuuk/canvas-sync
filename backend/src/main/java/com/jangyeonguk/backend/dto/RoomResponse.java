@@ -19,5 +19,6 @@ public class RoomResponse {
     private String ownerName; // owner가 있으면 displayName, 없으면 "익명"
     private OffsetDateTime createdAt;
     private OffsetDateTime lastUpdatedAt;
+    private Integer participantCount; // 방 참여자 수
 }
 
