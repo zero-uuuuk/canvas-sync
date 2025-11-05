@@ -4,29 +4,27 @@ import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import './AuthCard.css';
 
-type AuthMode = 'login' | 'signup';
+type TabType = 'login' | 'signup';
 
 export function AuthCard() {
+  const [activeTab, setActiveTab] = useState<TabType>('login');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>('login');
-  const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleLoginSuccess = (response: any) => {
-    console.log('Login successful:', response);
-    // 로그인 성공 후 사용자 정보 저장 및 대시보드로 이동
-    localStorage.setItem('user', JSON.stringify(response));
+  const handleLoginSuccess = (_response: any) => {
+    setError(null);
     navigate('/dashboard');
   };
 
-  const handleSignupSuccess = (response: any) => {
-    console.log('Signup successful:', response);
-    // 회원가입 성공 시 로그인 탭으로 이동
-    setMode('login');
-    setErrorMessage('');
+  const handleSignupSuccess = (_response: any) => {
+    setError(null);
+    // 회원가입 성공 후 로그인 탭으로 전환하거나 로그인 처리
+    setActiveTab('login');
+    setError('회원가입이 완료되었습니다. 로그인해주세요.');
   };
 
   const handleError = (message: string) => {
-    setErrorMessage(message);
+    setError(message);
   };
 
   return (
@@ -34,61 +32,47 @@ export function AuthCard() {
       <div className="auth-header">
         <div className="auth-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
           </svg>
         </div>
-        <h1 className="auth-title">환영합니다</h1>
-        <p className="auth-subtitle">계정에 로그인하거나 새 계정을 만드세요</p>
+        <h1 className="auth-title">Canvas Sync</h1>
+        <p className="auth-subtitle">협업을 위한 캔버스 공유 플랫폼</p>
       </div>
 
       <div className="auth-tabs">
         <button
-          className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+          className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`}
           onClick={() => {
-            setMode('login');
-            setErrorMessage('');
+            setActiveTab('login');
+            setError(null);
           }}
         >
           로그인
         </button>
         <button
-          className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
+          className={`auth-tab ${activeTab === 'signup' ? 'active' : ''}`}
           onClick={() => {
-            setMode('signup');
-            setErrorMessage('');
+            setActiveTab('signup');
+            setError(null);
           }}
         >
           회원가입
         </button>
       </div>
 
-      {errorMessage && (
-        <div className="error-message">
-          {errorMessage}
-        </div>
-      )}
-
       <div className="auth-content">
-        {mode === 'login' ? (
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+        {activeTab === 'login' ? (
           <LoginForm onLoginSuccess={handleLoginSuccess} onError={handleError} />
         ) : (
           <SignupForm onSignupSuccess={handleSignupSuccess} onError={handleError} />
         )}
-      </div>
-
-      <div className="social-login">
-        <div className="divider">
-          <span>또는</span>
-        </div>
-        <div className="social-buttons">
-          <button className="social-button" type="button">
-            Google
-          </button>
-          <button className="social-button" type="button">
-            GitHub
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -2,8 +2,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { roomApi } from '../api/roomApi';
 import { canvasApi } from '../api/canvasApi';
-import type { RoomResponse } from '../types/room';
+import type { RoomResponse, InvitationCreateResponse } from '../types/room';
 import type { CanvasObjectResponse, LineObjectData } from '../types/canvas';
+import { InvitationLinkModal } from '../components/room/InvitationLinkModal';
 import './RoomPage.css';
 
 export function RoomPage() {
@@ -12,6 +13,11 @@ export function RoomPage() {
   const [room, setRoom] = useState<RoomResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  
+  // 초대 링크 관련 상태
+  const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
+  const [invitation, setInvitation] = useState<InvitationCreateResponse | null>(null);
+  const [isCreatingInvitation, setIsCreatingInvitation] = useState(false);
   
   // Canvas 관련 상태
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -253,6 +259,23 @@ export function RoomPage() {
     }
   };
 
+  // 초대 링크 생성 핸들러
+  const handleCreateInvitation = async () => {
+    if (!roomId) return;
+
+    try {
+      setIsCreatingInvitation(true);
+      const invitationData = await roomApi.createInvitation(roomId);
+      setInvitation(invitationData);
+      setIsInvitationModalOpen(true);
+    } catch (err) {
+      console.error('Failed to create invitation:', err);
+      alert(err instanceof Error ? err.message : '초대 링크 생성에 실패했습니다.');
+    } finally {
+      setIsCreatingInvitation(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="room-page">
@@ -301,6 +324,21 @@ export function RoomPage() {
         </div>
         <div className="action-buttons">
           <button
+            className="invite-button"
+            type="button"
+            onClick={handleCreateInvitation}
+            disabled={isCreatingInvitation}
+            title="초대 링크 생성"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+            <span>{isCreatingInvitation ? '생성 중...' : '초대'}</span>
+          </button>
+          <button
             className="undo-button"
             type="button"
             onClick={handleUndo}
@@ -340,6 +378,12 @@ export function RoomPage() {
           />
         </div>
       </main>
+
+      <InvitationLinkModal
+        isOpen={isInvitationModalOpen}
+        onClose={() => setIsInvitationModalOpen(false)}
+        invitation={invitation}
+      />
     </div>
   );
 }

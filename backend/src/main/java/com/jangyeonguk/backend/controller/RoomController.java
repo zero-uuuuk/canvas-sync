@@ -1,8 +1,10 @@
 package com.jangyeonguk.backend.controller;
 
+import com.jangyeonguk.backend.dto.InvitationCreateResponse;
 import com.jangyeonguk.backend.dto.RoomCreateRequest;
 import com.jangyeonguk.backend.dto.RoomCreateResponse;
 import com.jangyeonguk.backend.dto.RoomResponse;
+import com.jangyeonguk.backend.service.InvitationService;
 import com.jangyeonguk.backend.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class RoomController {
     
     private final RoomService roomService;
+    private final InvitationService invitationService;
     
     /**
      * F-01a: 새 캔버스(방) 생성
@@ -36,18 +39,6 @@ public class RoomController {
     }
     
     /**
-     * 전체 방 리스트 조회
-     * 대시보드에서 최근 업데이트된 순서로 정렬된 방 목록을 반환
-     * 
-     * @return 방 목록 (최근 업데이트된 순서)
-     */
-    @GetMapping
-    public ResponseEntity<List<RoomResponse>> getAllRooms() {
-        List<RoomResponse> rooms = roomService.getAllRooms();
-        return ResponseEntity.ok(rooms);
-    }
-    
-    /**
      * F-01b: 고유 URL로 캔버스 입장
      * 생성된 고유 URL(.../room/{room_id})을 받은 사람이 해당 URL로 직접 접속 및 입장
      * 
@@ -58,6 +49,32 @@ public class RoomController {
     public ResponseEntity<RoomResponse> getRoom(@PathVariable UUID roomId) {
         RoomResponse response = roomService.getRoom(roomId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * F-01c: 현재 인증된 사용자가 참여한 방 리스트 조회
+     * 대시보드에서 최근 업데이트된 순서로 정렬된 방 목록을 반환
+     * 
+     * @return 사용자가 참여한 방 목록 (최근 업데이트된 순서)
+     */
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        List<RoomResponse> rooms = roomService.getAllRooms();
+        return ResponseEntity.ok(rooms);
+    }
+    
+    /**
+     * F-03: 초대 링크 생성
+     * 방의 소유자 또는 참가자만 초대 링크를 생성할 수 있음
+     * 생성된 링크를 원하는 사용자에게 전송하여 초대할 수 있음
+     * 
+     * @param roomId 방 ID
+     * @return 초대 링크 정보
+     */
+    @PostMapping("/{roomId}/invitations")
+    public ResponseEntity<InvitationCreateResponse> createInvitation(@PathVariable UUID roomId) {
+        InvitationCreateResponse response = invitationService.createInvitation(roomId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
 
