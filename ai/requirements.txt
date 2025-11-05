@@ -1,0 +1,33 @@
+# FastAPI and web server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Google Gemini API
+google-genai>=0.2.2
+
+# Image processing
+Pillow>=10.3.0
+rembg>=2.0.50
+onnxruntime>=1.16.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# HTTP client
+httpx>=0.26.0
+requests>=2.31.0
+
+# JSON handling
+pydantic>=2.5.3
+pydantic-settings>=2.1.0
+
+# Logging
+loguru>=0.7.2
+
+# Type hints
+typing-extensions>=4.9.0
+
+# Note: CORS is built into FastAPI
+# Note: base64 and asyncio are part of Python standard library
+

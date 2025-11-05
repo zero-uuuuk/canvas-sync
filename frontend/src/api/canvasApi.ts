@@ -1,5 +1,5 @@
-import type { CanvasObjectCreateRequest, CanvasObjectResponse } from '../types/canvas';
-import { apiGet, apiPost, apiDelete } from '../utils/apiClient';
+import type { CanvasObjectCreateRequest, CanvasObjectResponse, CanvasObjectUpdateRequest } from '../types/canvas';
+import { apiGet, apiPost, apiDelete, apiPut } from '../utils/apiClient';
 
 export const canvasApi = {
   /**
@@ -31,6 +31,24 @@ export const canvasApi = {
    */
   async redoCanvasObject(roomId: string): Promise<CanvasObjectResponse> {
     return apiPost<CanvasObjectResponse>(`/rooms/${roomId}/canvas-objects/redo`);
+  },
+
+  /**
+   * 개별 캔버스 객체 삭제
+   */
+  async deleteCanvasObject(roomId: string, objectId: string): Promise<CanvasObjectResponse> {
+    return apiDelete<CanvasObjectResponse>(`/rooms/${roomId}/canvas-objects/${objectId}`);
+  },
+
+  /**
+   * 캔버스 객체 업데이트
+   */
+  async updateCanvasObject(
+    roomId: string,
+    objectId: string,
+    request: CanvasObjectUpdateRequest
+  ): Promise<CanvasObjectResponse> {
+    return apiPut<CanvasObjectResponse>(`/rooms/${roomId}/canvas-objects/${objectId}`, request);
   },
 };
 

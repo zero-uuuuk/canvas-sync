@@ -2,6 +2,7 @@ package com.jangyeonguk.backend.service;
 
 import com.jangyeonguk.backend.dto.CanvasObjectCreateRequest;
 import com.jangyeonguk.backend.dto.CanvasObjectResponse;
+import com.jangyeonguk.backend.dto.CanvasObjectUpdateRequest;
 import com.jangyeonguk.backend.entity.CanvasObject;
 import com.jangyeonguk.backend.entity.Room;
 import com.jangyeonguk.backend.entity.User;
@@ -125,6 +126,75 @@ public class CanvasObjectService {
         
         CanvasObject canvasObject = latestDeletedObject.get();
         canvasObject.setIsDeleted(false);
+        CanvasObject savedObject = canvasObjectRepository.save(canvasObject);
+        
+        return mapToResponse(savedObject);
+    }
+    
+    /**
+     * 개별 캔버스 객체 삭제 (soft delete)
+     * 
+     * @param roomId 방 ID
+     * @param objectId 객체 ID
+     * @return 삭제된 캔버스 객체 정보
+     */
+    @Transactional
+    public CanvasObjectResponse deleteCanvasObject(UUID roomId, UUID objectId) {
+        // 방 존재 여부 확인
+        roomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
+        
+        // 객체 조회
+        CanvasObject canvasObject = canvasObjectRepository.findById(objectId)
+                .orElseThrow(() -> new CanvasObjectNotFoundException("캔버스 객체를 찾을 수 없습니다: " + objectId));
+        
+        // 방에 속한 객체인지 확인
+        if (!canvasObject.getRoom().getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("해당 방에 속한 객체가 아닙니다.");
+        }
+        
+        // 이미 삭제된 객체인지 확인
+        if (canvasObject.getIsDeleted()) {
+            throw new IllegalArgumentException("이미 삭제된 객체입니다.");
+        }
+        
+        // soft delete 처리
+        canvasObject.setIsDeleted(true);
+        CanvasObject savedObject = canvasObjectRepository.save(canvasObject);
+        
+        return mapToResponse(savedObject);
+    }
+    
+    /**
+     * 캔버스 객체 업데이트 (objectData 수정)
+     * 
+     * @param roomId 방 ID
+     * @param objectId 객체 ID
+     * @param request 업데이트 요청 (objectData)
+     * @return 업데이트된 캔버스 객체 정보
+     */
+    @Transactional
+    public CanvasObjectResponse updateCanvasObject(UUID roomId, UUID objectId, CanvasObjectUpdateRequest request) {
+        // 방 존재 여부 확인
+        roomRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new RoomNotFoundException("방을 찾을 수 없습니다: " + roomId));
+        
+        // 객체 조회
+        CanvasObject canvasObject = canvasObjectRepository.findById(objectId)
+                .orElseThrow(() -> new CanvasObjectNotFoundException("캔버스 객체를 찾을 수 없습니다: " + objectId));
+        
+        // 방에 속한 객체인지 확인
+        if (!canvasObject.getRoom().getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("해당 방에 속한 객체가 아닙니다.");
+        }
+        
+        // 이미 삭제된 객체인지 확인
+        if (canvasObject.getIsDeleted()) {
+            throw new IllegalArgumentException("삭제된 객체는 수정할 수 없습니다.");
+        }
+        
+        // objectData 업데이트
+        canvasObject.setObjectData(request.getObjectData());
         CanvasObject savedObject = canvasObjectRepository.save(canvasObject);
         
         return mapToResponse(savedObject);
