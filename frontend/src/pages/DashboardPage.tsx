@@ -34,7 +34,7 @@ export function DashboardPage() {
     fetchRooms();
   }, []);
 
-  const handleCreateRoom = (roomId: string, roomUrl: string) => {
+  const handleCreateRoom = (roomId: string) => {
     // 방 생성 성공 시 방 페이지로 이동
     navigate(`/rooms/${roomId}`);
   };

@@ -6,7 +6,7 @@ import './CreateRoomModal.css';
 interface CreateRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (roomId: string, roomUrl: string) => void;
+  onSuccess: (roomId: string) => void;
 }
 
 export function CreateRoomModal({ isOpen, onClose, onSuccess }: CreateRoomModalProps) {
@@ -27,7 +27,7 @@ export function CreateRoomModal({ isOpen, onClose, onSuccess }: CreateRoomModalP
       };
 
       const response = await roomApi.createRoom(request);
-      onSuccess(response.roomId, response.roomUrl);
+      onSuccess(response.roomId);
       handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : '방 생성에 실패했습니다.');

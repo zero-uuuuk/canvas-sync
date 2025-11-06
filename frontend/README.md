@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Canvas Sync Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`canvas-sync` 프로젝트의 프론트엔드 패키지입니다. React + TypeScript + Vite 기반으로 개발되며 협업 캔버스, AI 이미지 변환 기능 등을 제공합니다.
 
-Currently, two official plugins are available:
+## 요구 사항
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node.js 18 이상
+- npm 9 이상 (또는 pnpm/yarn 등 원하는 패키지 매니저)
 
-## React Compiler
+## 환경 변수
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+런타임에 불러올 API 도메인은 [`VITE_API_BASE_URL`] 환경 변수로 주입합니다. 기본값은 개발 편의를 위해 `http://localhost:8080/api`입니다.
 
-## Expanding the ESLint configuration
+| 이름 | 설명 | 예시 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | 백엔드 REST API의 루트 URL | `https://api.example.com/api` |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 로컬 개발
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env
+echo "VITE_API_BASE_URL=http://localhost:8080/api" >> .env
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Vercel 배포
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Vercel 프로젝트 설정에서 `Environment Variables` 섹션을 열어 `VITE_API_BASE_URL`을 추가합니다.
+2. 값은 프로덕션 백엔드 엔드포인트(예: `https://api.example.com/api`)로 지정합니다.
+3. 변경 후 재배포하면 새 환경변수가 빌드에 반영됩니다.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 스크립트
+
+- `npm run dev`: 개발 서버 실행
+- `npm run build`: 프로덕션 빌드
+- `npm run preview`: 빌드 결과 미리보기
+
+## 코드 스타일
+
+- ESLint와 Prettier 설정을 프로젝트 기준으로 맞춰두었습니다.
+- VSCode 사용 시 추천 확장: ESLint, Prettier, Tailwind CSS IntelliSense (사용 중이라면).
+
+## 폴더 구조 (요약)
+
 ```
+src/
+  api/            # API 통신 로직
+  components/     # 재사용 가능한 UI 컴포넌트
+  hooks/          # 커스텀 훅
+  pages/          # 페이지 단위 컴포넌트
+  types/          # 타입 정의
+  utils/          # 유틸 함수
+```
+
+## 이슈/문의
+
+버그, 개선 제안은 GitHub 이슈 또는 협업 도구(예: Slack, JIRA 등)로 공유해주세요.
