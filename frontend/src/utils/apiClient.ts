@@ -1,7 +1,6 @@
 import { getToken } from './tokenStorage';
 import type { ApiError } from '../types/auth';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import { API_BASE_URL } from '../config/env';
 
 /**
  * 공통 fetch 함수
