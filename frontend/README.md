@@ -1,58 +1,87 @@
-# Canvas Sync Frontend
+## Canvas Sync Frontend
 
-`canvas-sync` 프로젝트의 프론트엔드 패키지입니다. React + TypeScript + Vite 기반으로 개발되며 협업 캔버스, AI 이미지 변환 기능 등을 제공합니다.
+React + TypeScript + Vite로 구현된 `canvas-sync` 프로젝트의 프론트엔드 애플리케이션입니다.
 
-## 요구 사항
+### 1. 저장소 클론 & 디렉터리 이동
 
-- Node.js 18 이상
-- npm 9 이상 (또는 pnpm/yarn 등 원하는 패키지 매니저)
+```bash
+git clone https://github.com/zero-uuuuk/canvas-sync.git
+cd canvas-sync/frontend
+```
 
-## 환경 변수
+> 개인 포크를 사용한다면 `zero-uuuuk` 대신 본인 GitHub 계정명을 작성하세요.
 
-런타임에 불러올 API 도메인은 [`VITE_API_BASE_URL`] 환경 변수로 주입합니다. 기본값은 개발 편의를 위해 `http://localhost:8080/api`입니다.
+### 2. 환경 준비 (Node 18 이상)
 
-| 이름 | 설명 | 예시 |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | 백엔드 REST API의 루트 URL | `https://api.example.com/api` |
+- 권장: `nvm` 혹은 `nvm-windows`로 Node LTS(18 또는 20 이상) 설치 후 `nvm use 20` 등으로 활성화
+- 설치 확인: `node -v`, `npm -v`
 
-### 로컬 개발
+### 3. 환경 변수 설정
 
 ```bash
 cp .env.example .env
-echo "VITE_API_BASE_URL=http://localhost:8080/api" >> .env
+# 필요에 따라 API 엔드포인트 수정
+echo "VITE_API_BASE_URL=https://api.example.com/api" >> .env
+```
+
+기본값은 `http://localhost:8080/api` 이며, 배포 환경에 맞춰 수정하세요.
+
+### 4. 의존성 설치
+
+```bash
 npm install
+```
+
+### 5. 개발 서버 실행
+
+```bash
 npm run dev
 ```
 
-### Vercel 배포
+- 브라우저에서 `http://localhost:5173` 접속
+- Hot Module Replacement(HMR)로 변경 사항이 즉시 반영됨
 
-1. Vercel 프로젝트 설정에서 `Environment Variables` 섹션을 열어 `VITE_API_BASE_URL`을 추가합니다.
-2. 값은 프로덕션 백엔드 엔드포인트(예: `https://api.example.com/api`)로 지정합니다.
-3. 변경 후 재배포하면 새 환경변수가 빌드에 반영됩니다.
+### 6. 프로덕션 빌드
 
-## 스크립트
-
-- `npm run dev`: 개발 서버 실행
-- `npm run build`: 프로덕션 빌드
-- `npm run preview`: 빌드 결과 미리보기
-
-## 코드 스타일
-
-- ESLint와 Prettier 설정을 프로젝트 기준으로 맞춰두었습니다.
-- VSCode 사용 시 추천 확장: ESLint, Prettier, Tailwind CSS IntelliSense (사용 중이라면).
-
-## 폴더 구조 (요약)
-
-```
-src/
-  api/            # API 통신 로직
-  components/     # 재사용 가능한 UI 컴포넌트
-  hooks/          # 커스텀 훅
-  pages/          # 페이지 단위 컴포넌트
-  types/          # 타입 정의
-  utils/          # 유틸 함수
+```bash
+npm run build
 ```
 
-## 이슈/문의
+- 결과물은 `dist/` 디렉터리에 생성
+- 배포 전 `npm run preview`로 빌드 결과를 확인할 수 있음
 
-버그, 개선 제안은 GitHub 이슈 또는 협업 도구(예: Slack, JIRA 등)로 공유해주세요.
+### 7. 추가 정보
+
+- 성능 측정: `App.tsx`에 `@vercel/speed-insights`가 포함되어 있어 Vercel 배포 시 자동으로 성능 인사이트가 수집됩니다.
+- 라우팅: React Router를 사용하며, Vercel 배포 시 `vercel.json`의 리라이트 설정으로 새로고침 404를 방지합니다.
+
+---
+
+## 배포 체크리스트 (Vercel)
+
+### 1. 사전 검증
+
+- `npm run build`가 성공하는지 확인하고, `npm run preview`로 빌드 결과를 한 번 검수합니다.
+
+### 2. 환경 변수
+
+- `VITE_API_BASE_URL`을 Vercel 프로젝트의 Environment Variables에 등록합니다.
+- 값이 없으면 애플리케이션은 기본값(`http://localhost:8080/api`)을 사용하므로, 백엔드 엔드포인트와 동기화되었는지 확인합니다.
+
+### 3. Vercel 프로젝트 설정
+
+- GitHub 저장소와 연결한 뒤, 프레임워크 프리셋은 `Vite` 또는 `Other`로 지정합니다.
+- Build Command: `npm run build`
+- Install Command: `npm install`
+- Output Directory: `dist`
+- 필요 시 `NODE_VERSION` 환경 변수로 런타임을 고정할 수 있습니다 (예: `20`).
+
+### 4. Observability
+
+- `@vercel/speed-insights`가 활성화되어 있으므로 배포 후 Vercel Dashboard에서 성능 인사이트를 확인합니다.
+
+### 5. 새로고침 404 방지
+
+- 루트 또는 `frontend` 디렉터리에 위치한 `vercel.json`의 리라이트 설정이 적용되어 모든 경로 요청이 `index.html`로 전달됩니다.
+- 설정 변경 시 커밋/배포를 통해 반영되는지 확인하세요.
+
