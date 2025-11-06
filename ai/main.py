@@ -53,7 +53,8 @@ async def health():
     return {
         "status": "healthy",
         "api_key_configured": settings.GOOGLE_API_KEY != "",
-        "model": settings.MODEL_ID
+        "model": settings.MODEL_ID,
+        "modal_gpu_enabled": settings.USE_MODAL_GPU
     }
 
 

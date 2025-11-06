@@ -1,4 +1,5 @@
 """서비스 모듈"""
-from .gemini_service import gemini_service
 
-__all__ = ["gemini_service"]
+from .modal_client import generate_image_edit, image_to_base64
+
+__all__ = ["generate_image_edit", "image_to_base64"]

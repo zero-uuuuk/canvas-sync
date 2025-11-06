@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 # 상위 디렉토리를 경로에 추가
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import ImageEditResponse
-from services import gemini_service
+from services import image_to_base64, generate_image_edit
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ async def generate_image_to_image(
         logger.info(f"이미지 편집 요청 수신: 파일명={image.filename}, 크기={len(image_bytes)} bytes")
         
         # 이미지 편집
-        edited_image_bytes = gemini_service.generate_image_edit(
+        edited_image_bytes = await generate_image_edit(
+            prompt=prompt,
             image_bytes=image_bytes,
-            prompt=prompt
         )
         
         # Base64로 인코딩
-        image_base64 = gemini_service.image_to_base64(edited_image_bytes)
+        image_base64 = image_to_base64(edited_image_bytes)
         
         return ImageEditResponse(
             success=True,

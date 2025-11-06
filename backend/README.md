@@ -1,66 +1,111 @@
-## Render 배포 가이드
+## Backend 운영 가이드
 
-### 1. 개요
-- 대상: `backend` (Spring Boot 3.5.7, Java 21)
-- 목표: Render Web Service로 배포 및 PostgreSQL 연동
-- 기본 전제: GitHub 저장소가 Render와 연동 가능하며, 환경 변수는 Render 대시보드에서 관리한다.
+### 1. 서비스 개요
+- 스택: Spring Boot 3.5.7, Java 21, Gradle
+- 배포 대상: Render Web Service (Docker 모드)
+- 데이터베이스: Render PostgreSQL (또는 외부 호스트)
+- 프론트엔드: `https://canvas-sync.vercel.app`
 
-### 2. 사전 준비
-- 로컬에서 `./gradlew bootJar`로 JAR 생성 여부 확인
-- 필요 환경 변수 목록 정리 (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET`, `AI_SERVICE_URL` 등)
-- 데이터베이스로 Render PostgreSQL 또는 외부 PostgreSQL 준비
+### 2. 로컬/빌드 준비
+- `./gradlew bootJar`로 빌드 가능 여부 확인 (결과물: `build/libs/backend-0.0.1-SNAPSHOT.jar`)
+- Docker 컨테이너 사용 시 `backend/Dockerfile` 확인 (멀티 스테이지 빌드, Amazon Corretto 21)
+- 샘플 환경 변수는 `backend/.env.example`에서 확인, 로컬 실행용 `.env` 제공
 
-### 3. Render Web Service 생성
-1. Render 대시보드 → **New** → **Web Service** → 저장소 선택
-2. Root Directory에 `backend` 입력
-3. Build Command: `./gradlew clean build -x test`
-4. Start Command: `java -jar build/libs/backend-0.0.1-SNAPSHOT.jar`
-   - 버전 변경 시 `build/libs` 내부 JAR 파일명 확인 후 수정
-5. Instance Type: 최소 Starter 이상 선택 (JVM 메모리 고려)
+### 3. Render 배포 절차
+1. Render 대시보드 → **New → Web Service** → 저장소 연결
+2. Deploy region은 DB와 동일 리전 선택 (예: Singapore)
+3. **Runtime**: Docker 선택 (Java 프리셋이 없을 때 대안)
+4. 추가 설정
+   - Root Directory: `backend`
+   - Dockerfile: `backend/Dockerfile`
+   - Instance Type: Starter 이상 권장 (메모리 >512MB)
+   - Health Check Path: `/actuator/health` (Actuator 의존성 추가 후)
+   - Auto Deploy: main/production 브랜치에 맞춰 선택
 
-### 4. 환경 변수 설정
-- Render Dashboard → 서비스 → **Environment** 탭에서 추가
-- 로컬 기본값(`application.properties`)은 개발용으로 두고, Render 환경 변수로 상용값을 오버라이드한다.
+### 4. 환경 변수 일람
+- Render → 서비스 → **Environment** 탭에서 등록
+- 모든 값은 운영에 맞춰 갱신 후 저장 (변경 후 재배포 필요)
 
-| 키 | 기본값 (로컬) | 설명 |
-| --- | --- | --- |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/canvas_sync_db` | PostgreSQL 연결 URL |
-| `SPRING_DATASOURCE_USERNAME` | `canvas_sync` | DB 사용자 |
-| `SPRING_DATASOURCE_PASSWORD` | `canvas_sync_password` | DB 비밀번호 |
-| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | `org.postgresql.Driver` | JDBC 드라이버 |
-| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | 스키마 동기화 전략 |
-| `SPRING_JPA_SHOW_SQL` | `true` | SQL 로그 출력 여부 |
-| `SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT` | `org.hibernate.dialect.PostgreSQLDialect` | Hibernate Dialect |
-| `SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL` | `true` | SQL 포맷팅 |
-| `JWT_SECRET` | `your-secret-key-...` | JWT 서명 키 (운영 환경에서 필수 변경) |
-| `JWT_EXPIRATION` | `86400000` | JWT 만료 시간 (ms) |
-| `AI_SERVICE_URL` | `http://localhost:8000` | AI 서비스 엔드포인트 |
-| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://www.localhost:5173` | CORS 허용 Origin 목록 (콤마 구분) |
+| 키 | 기본값 (로컬) | 실제 적용 예시 | 설명 |
+| --- | --- | --- | --- |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/canvas_sync_db` | `jdbc:postgresql://dpg-***:5432/canvas_sync_db` | PostgreSQL 연결 URL |
+| `SPRING_DATASOURCE_USERNAME` | `canvas_sync` | Render Connections의 Username | DB 사용자 |
+| `SPRING_DATASOURCE_PASSWORD` | `canvas_sync_password` | Render Connections의 Password | DB 비밀번호 |
+| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | `org.postgresql.Driver` | 동일 | JDBC 드라이버 |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | 운영 시 `validate` 권장 | 스키마 동기화 전략 |
+| `SPRING_JPA_SHOW_SQL` | `true` | 운영 시 `false` 고려 | SQL 로그 출력 여부 |
+| `SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT` | `org.hibernate.dialect.PostgreSQLDialect` | 동일 | Hibernate Dialect |
+| `SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL` | `true` | 운영 시 `false` 가능 | SQL 포맷팅 |
+| `JWT_SECRET` | `your-secret-key-...` | 강력한 랜덤 문자열 | JWT 서명 키 |
+| `JWT_EXPIRATION` | `86400000` | 필요 시 조정 | JWT 만료 (ms) |
+| `AI_SERVICE_URL` | `http://localhost:8000` | `https://<ai-service-domain>` | AI 연동 엔드포인트 |
+| `APP_CORS_ALLOWED_ORIGINS` | `https://canvas-sync.vercel.app,https://www.canvas-sync.vercel.app,http://localhost:5173,http://www.localhost:5173` | 프론트/로컬 도메인 | CORS 허용 Origin 목록 |
 
-### 5. PostgreSQL 연동
-1. Render → **New** → **PostgreSQL** 생성
-2. 생성 완료 후 **Connection** 탭에서 연결 정보 확인
-3. Web Service 환경 변수에 Host/Port/Database/User/Password 반영
-4. 초기 데이터베이스 스키마는 `spring.jpa.hibernate.ddl-auto=update`로 자동 생성되지만, 운영 단계에서는 마이그레이션 도구(Flyway 등) 도입 권장
+> NOTE: `SecurityConfig`는 `app.cors.allowed-origins` 값을 쉼표 기준으로 파싱한다. 운영과 로컬을 동시에 허용하려면 콤마로 구분해 입력한다.
 
-### 6. 헬스체크 및 운영 설정
-- Spring Boot Actuator 의존성을 추가했다면 `/actuator/health`를 Render Health Check Path로 설정
-- `Always On` 활성화로 콜드 스타트 최소화
-- 로그는 Render Event Log에서 확인, 외부 모니터링 연동 시 APM 도입 고려
+### 5. PostgreSQL 연동 & 관리
+1. Render → **New → PostgreSQL**로 인스턴스 생성 (Name/DB/User 자유 지정)
+2. Connection 탭 정보 사용
+   - Hostname: `dpg-***` (External URL의 `@`와 `:` 사이)
+   - Port: `5432`
+   - Database: 예) `canvas_sync_db`
+   - Username: 예) `canvas_sync`
+   - Password: 표시된 전체 문자열
+3. 환경 변수에 위 값을 반영
+4. DBeaver 접속 방법
+   - 새 PostgreSQL 연결 생성 → Host/Port/Database/User/Password 입력
+   - SSL 탭에서 `Use SSL` 체크, `sslmode=require`
+   - Test Connection 후 저장
+   - Private Networking을 사용 중이면 외부에서 접근 불가, 외부 접속 시 External URL 사용
 
-### 7. CI/CD 흐름
-- 기본: 선택한 브랜치에 push → 자동 빌드 & 배포
-- 필요 시 Production 브랜치 지정 또는 Auto Deploy 끄고 수동 배포 전환
-- Pull Request Preview 활성화로 미리보기 환경 제공 가능
+### 6. 프론트엔드 연동 정보
+- 프론트 배포: `https://canvas-sync.vercel.app/auth`
+- 프론트 `.env` / Vercel Env: `VITE_API_BASE_URL=https://canvas-sync.onrender.com/api`
+- 백엔드 `APP_CORS_ALLOWED_ORIGINS`에 동일 도메인 추가 필요
 
-### 8. 추가 참고 사항
-- Docker 방식 배포를 원하면 `Dockerfile` 작성 후 Render에서 Docker 모드 선택
-- JWT Secret, 데이터베이스 자격 증명 등은 정기적으로 교체하는 정책 수립
-- 외부 AI 서비스와의 통신 시 CORS/Security 설정을 `SecurityConfig`에서 점검
+### 7. Render Advanced 설정 권장 사항
+- Health Check Path: `/actuator/health`
+- Auto Deploy: 운영 브랜치 기준으로 Enable, 필요 시 수동 배포로 전환
+- Private Network: 같은 리전의 DB와 연동 시 활성화 고려 (외부 접속 필요 시 비활성)
+- Request Timeout: 장기 처리 API가 있다면 기본 30초에서 확장
+- Build Cache: Docker 빌드 실패 시 Advanced 탭에서 “Clear build cache” 사용
+- Always On: 활성화하여 콜드스타트 감소
 
-### 9. 문제 해결 체크리스트
-- 빌드 실패 시: Gradle 버전/Java 버전 확인, 캐시 초기화를 위해 Clean Build 수행
-- 실행 실패 시: 환경 변수 누락, DB 접근 권한, JAR 경로 확인
-- 응답 지연 시: 인스턴스 타입 업그레이드, DB 연결 상태 모니터링
+### 8. 운영 중 빈번한 이슈 & 대응
+- **빌드 실패 (Gradle)**: 캐시 초기화를 위해 `./gradlew clean` 또는 Render → Clear build cache
+- **이미지 빌드 지연**: 멀티 스테이지 Dockerfile 유지, 필요 시 Render Pro 플랜 고려
+- **DB 연결 오류**: Host/Port/Password 오타 확인, 보안 그룹/Private Network 상태 확인
+- **CORS 오류**: `APP_CORS_ALLOWED_ORIGINS` 값을 확인하고 프론트 도메인 포함 여부 체크
+- **JWT 관련 오류**: `JWT_SECRET` 길이/값 검증 (256비트 이상)
+- **AI 연동 실패**: `AI_SERVICE_URL` 엔드포인트/헬스 체크
 
+### 9. 참고 링크 / 파일
+- Dockerfile: `backend/Dockerfile`
+- 환경 변수 샘플: `backend/.env.example`
+- Spring 설정: `backend/src/main/resources/application.properties`
+- CORS 설정: `backend/src/main/java/com/jangyeonguk/backend/config/SecurityConfig.java`
+
+### 10. 신규 참여자용 로컬 실행 가이드
+1. **필수 준비물**
+   - JDK 21 (Amazon Corretto 21 권장)
+   - Docker (선택: 로컬 DB를 컨테이너로 띄울 경우)
+   - Gradle은 `gradlew`로 제공되므로 추가 설치 불필요
+2. **프로젝트 클론 및 이동**
+   ```bash
+   git clone <repo-url>
+   cd canvas-sync/backend
+   ```
+3. **환경 변수 구성**
+   - `cp .env.example .env`
+   - 필요한 항목을 수정 후, 로컬 실행 전에 `export $(grep -v '^#' .env | xargs)` 등으로 세션에 반영하거나 IDE Run Configuration에 설정
+4. **데이터베이스 옵션**
+   - 로컬 컨테이너: `docker compose up -d postgres` (포트 5432)
+   - Render DB 사용: `.env`의 `SPRING_DATASOURCE_*` 값을 Render Connections 정보로 교체
+5. **애플리케이션 실행**
+   - Gradle: `./gradlew bootRun`
+   - JAR: `./gradlew bootJar` 후 `java -jar build/libs/backend-0.0.1-SNAPSHOT.jar`
+   - Docker: `docker build -t canvas-sync-backend . && docker run -p 8080:8080 --env-file .env canvas-sync-backend`
+6. **확인**
+   - API 기본 주소: `http://localhost:8080/api`
+   - 헬스 체크 (Actuator 사용 시): `http://localhost:8080/actuator/health`
 
