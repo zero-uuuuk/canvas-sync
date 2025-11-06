@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { RoomPage } from './pages/RoomPage';
@@ -10,7 +11,9 @@ import './App.css';
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
+      <SpeedInsights />
+      <BrowserRouter>
       <Routes>
         <Route
           path="/auth"
@@ -53,7 +56,8 @@ function App() {
           element={<Navigate to="/auth" replace />}
         />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </>
   );
 }
 
