@@ -29,5 +29,12 @@ class Settings:
     MAX_IMAGE_SIZE_MB: int = int(os.getenv("MAX_IMAGE_SIZE_MB", 10))
     ALLOWED_IMAGE_TYPES: list = os.getenv("ALLOWED_IMAGE_TYPES", "jpeg,jpg,png,webp").split(",")
 
+    # Modal GPU
+    USE_MODAL_GPU: bool = os.getenv("USE_MODAL_GPU", "false").lower() == "true"
+    MODAL_APP_NAME: str = os.getenv("MODAL_APP_NAME", "canvas-sync-gpu-worker")
+    MODAL_FUNCTION_NAME: str = os.getenv("MODAL_FUNCTION_NAME", "generate_image_edit")
+    MODAL_CALL_TIMEOUT: int = int(os.getenv("MODAL_CALL_TIMEOUT", 120))
+
+
 settings = Settings()
 
