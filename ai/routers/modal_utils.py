@@ -16,6 +16,7 @@ stub = modal.App(name=settings.MODAL_APP_NAME)
 
 @stub.function(
     name=settings.MODAL_FUNCTION_NAME,
+    serialized=True,
     gpu="T4",
     timeout=settings.MODAL_CALL_TIMEOUT,
 )
