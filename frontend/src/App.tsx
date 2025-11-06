@@ -13,7 +13,7 @@ function App() {
   return (
     <>
       <SpeedInsights />
-      <BrowserRouter>
+    <BrowserRouter>
       <Routes>
         <Route
           path="/auth"
@@ -56,7 +56,7 @@ function App() {
           element={<Navigate to="/auth" replace />}
         />
       </Routes>
-      </BrowserRouter>
+    </BrowserRouter>
     </>
   );
 }
