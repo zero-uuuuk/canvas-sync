@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 # 상위 디렉토리를 경로에 추가
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import ImageEditResponse
-from services import image_to_base64, generate_image_edit
+from .modal_utils import image_to_base64, generate_image_edit
 
 logger = logging.getLogger(__name__)
 
